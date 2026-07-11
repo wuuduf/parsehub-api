@@ -125,6 +125,7 @@ class APITest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("万能链接解析", response.text)
         self.assertIn("下载所选", response.text)
+        self.assertIn("autoparse", response.text)
 
     def test_video_qualities_are_real_playable_formats_and_deduplicated(self):
         client, _ = make_client()
@@ -139,6 +140,22 @@ class APITest(unittest.TestCase):
         self.assertEqual([item["label"] for item in video["qualities"]], ["720p", "360p"])
         self.assertEqual(video["qualities"][0]["id"], "720-best")
         self.assertEqual(video["url"], "https://cdn.example/video-720.mp4")
+
+    def test_shortcut_endpoint_returns_simple_caption_image_and_video_arrays(self):
+        client, _ = make_client()
+        response = client.post(
+            "/api/v1/shortcut/resolve",
+            headers={"Authorization": "Bearer test-key"},
+            json={"input": "https://xhs.example/post/shortcut"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()["data"]
+        self.assertEqual(data["caption"], "示例正文")
+        self.assertEqual(data["image_count"], 1)
+        self.assertEqual(data["video_count"], 1)
+        self.assertIn("/api/v1/media/", data["images"][0])
+        self.assertIn("/api/v1/media/", data["videos"][0])
 
     def test_admin_panel_is_available(self):
         client, _ = make_client()

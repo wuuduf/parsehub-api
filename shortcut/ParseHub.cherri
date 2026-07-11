@@ -1,0 +1,77 @@
+#define name ParseHub 万能解析
+#define color darkBlue
+#define glyph chainlink
+#define inputs text, url
+#define from sharesheet
+#define noinput getclipboard
+#define version 18
+
+#include 'actions/web'
+#include 'actions/photos'
+#include 'actions/sharing'
+
+#question endpoint "请输入 ParseHub 快捷指令接口完整地址" "https://parsehub.example.com/api/v1/shortcut/resolve"
+#question authorization "请输入 Authorization（格式：Bearer 你的APIKey）" "Bearer ph_请替换为你的APIKey"
+
+@shared = ShortcutInput
+const authValue = text(authorization)
+
+const response = jsonRequest(
+    endpoint,
+    "POST",
+    {
+        "input": "{@shared}",
+        "delivery": "auto",
+        "include_content": true
+    },
+    {
+        "Authorization": "{authValue}",
+        "Content-Type": "application/json"
+    }
+)
+
+const root = getDictionary(response)
+const dataRaw = getValue(root, "data")
+const data = getDictionary(dataRaw)
+const caption = getValue(data, "caption")
+const images = getValue(data, "images")
+const videos = getValue(data, "videos")
+const imageTotal = getValue(data, "image_count")
+const videoTotal = getValue(data, "video_count")
+
+@imageCount = 0
+@videoCount = 0
+
+menu "是否复制文案？" {
+    item "复制文案":
+        setClipboard(caption)
+    item "不复制":
+        nothing()
+}
+
+menu "发现 {imageTotal} 张图片，是否全部保存？" {
+    item "保存全部图片":
+        for imageURL in images {
+            const imageFile = downloadURL("{@imageURL}")
+            savePhoto(imageFile)
+            @imageCount += 1
+        }
+    item "不保存图片":
+        nothing()
+}
+
+menu "发现 {videoTotal} 个视频，是否保存最高画质？" {
+    item "保存最高画质视频":
+        for videoURL in videos {
+            const videoFile = downloadURL("{@videoURL}")
+            savePhoto(videoFile)
+            @videoCount += 1
+        }
+    item "不保存视频":
+        nothing()
+}
+
+showNotification(
+    "处理完成：图片 {@imageCount} 张，视频 {@videoCount} 个",
+    "ParseHub"
+)

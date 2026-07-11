@@ -107,6 +107,7 @@ API 已支持：
 
 详细设计见 [`docs/API_ARCHITECTURE.md`](docs/API_ARCHITECTURE.md)。
 快捷指令接入见 [`docs/IOS_SHORTCUT.md`](docs/IOS_SHORTCUT.md)。
+可直接导入的文件：[`shortcut/ParseHub.shortcut`](shortcut/ParseHub.shortcut)。
 各平台 Cookie 获取与配置见 [`docs/COOKIE_GUIDE.md`](docs/COOKIE_GUIDE.md)。
 用户解析页面见 [`docs/USER_PAGE.md`](docs/USER_PAGE.md)。
 VPS Docker 从零部署见 [`docs/VPS_DEPLOY.md`](docs/VPS_DEPLOY.md)。

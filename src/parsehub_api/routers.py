@@ -58,6 +58,34 @@ async def resolve(payload: ResolveRequest, request: Request) -> dict:
     return _success(request, data)
 
 
+@router.post("/api/v1/shortcut/resolve", tags=["parse"], dependencies=[Depends(authorize)])
+async def shortcut_resolve(payload: ResolveRequest, request: Request) -> dict:
+    """Return a deliberately simple shape that Apple Shortcuts handles reliably."""
+    if len(payload.input) > request.app.state.settings.max_input_length:
+        raise APIError(422, "INVALID_INPUT", "输入内容过长")
+    data, _ = await request.app.state.resolver.resolve(payload.input, include_content=True)
+    data = await _proxy_media(request, data)
+    images: list[str] = []
+    videos: list[str] = []
+    for item in data["media"]:
+        if item["kind"] in {"image", "animation", "live_photo"}:
+            images.append(item["url"])
+        if item["kind"] == "video":
+            videos.append(item["url"])
+        if item["kind"] == "live_photo" and item.get("paired_video_url"):
+            videos.append(item["paired_video_url"])
+    return _success(
+        request,
+        {
+            "caption": data["post"]["content"] or data["post"]["title"],
+            "images": images,
+            "videos": videos,
+            "image_count": len(images),
+            "video_count": len(videos),
+        },
+    )
+
+
 @router.api_route("/api/v1/media/{token}", methods=["GET", "HEAD"], tags=["media"])
 async def media(token: str, request: Request) -> Response:
     target = await request.app.state.media_tokens.resolve(token)

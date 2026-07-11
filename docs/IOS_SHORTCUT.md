@@ -1,5 +1,7 @@
 # iOS 快捷指令接入
 
+仓库已经提供可直接导入的签名快捷指令：[`../shortcut/ParseHub.shortcut`](../shortcut/ParseHub.shortcut)。它会直接调用 API，分别询问是否复制文案、保存全部图片、保存最高画质视频，不会跳转网页。以下内容保留为手工搭建和二次定制参考。
+
 ## 服务准备
 
 1. API 必须通过 HTTPS 暴露，不能在公开网络使用明文 HTTP。
