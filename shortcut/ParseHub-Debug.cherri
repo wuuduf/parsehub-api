@@ -11,11 +11,11 @@
 #include 'actions/sharing'
 
 #question endpoint "请输入 ParseHub 快捷指令接口完整地址" "https://parsehub.example.com/api/v1/shortcut/resolve"
-#question authorization "请输入 Authorization（格式：Bearer 你的APIKey）" "Bearer ph_请替换为你的APIKey"
+#question apiKey "请输入 API Key（只填写 ph_ 开头的密钥）" "ph_请替换为你的APIKey"
 
 @shared = ShortcutInput
 const endpointValue = text(endpoint)
-const authValue = text(authorization)
+const apiKeyValue = text(apiKey)
 
 alert(
     "收到的输入：\n\n{@shared}",
@@ -23,7 +23,7 @@ alert(
 )
 
 alert(
-    "即将请求：\n\n{endpointValue}\n\nAuthorization 已载入（调试版不会显示密钥明文）。",
+    "即将请求：\n\n{endpointValue}\n\nAPI Key 已载入，快捷指令将自动添加 Bearer 前缀（调试版不会显示密钥明文）。",
     "节点 2/9：请求配置"
 )
 
@@ -36,7 +36,7 @@ const response = jsonRequest(
         "include_content": true
     },
     {
-        "Authorization": "{authValue}",
+        "Authorization": "Bearer {apiKeyValue}",
         "Content-Type": "application/json"
     }
 )

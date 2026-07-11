@@ -12,10 +12,10 @@
    https://parse.example.com/api/v1/shortcut/resolve
    ```
 
-4. 填写 Authorization，格式必须为：
+4. 填写管理员面板生成的 API Key，只填写 `ph_` 开头的密钥：
 
    ```text
-   Bearer ph_你的APIKey
+   ph_你的APIKey
    ```
 
 ## 使用
@@ -32,7 +32,7 @@
 
 ## 重新配置服务器
 
-长按快捷指令 → 编辑，可以修改解析接口和 Authorization；也可以删除后重新导入。
+快捷指令会自动生成 `Authorization: Bearer ph_...` 请求头。长按快捷指令 → 编辑，可以修改解析接口和 API Key；也可以删除后重新导入。
 
 ## 源码
 
