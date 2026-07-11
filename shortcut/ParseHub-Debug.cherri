@@ -1,0 +1,145 @@
+#define name ParseHub 调试版
+#define color orange
+#define glyph chainlink
+#define inputs text, url
+#define from sharesheet
+#define noinput getclipboard
+#define version 18
+
+#include 'actions/web'
+#include 'actions/photos'
+#include 'actions/sharing'
+
+#question endpoint "请输入 ParseHub 快捷指令接口完整地址" "https://parsehub.example.com/api/v1/shortcut/resolve"
+#question authorization "请输入 Authorization（格式：Bearer 你的APIKey）" "Bearer ph_请替换为你的APIKey"
+
+@shared = ShortcutInput
+const endpointValue = text(endpoint)
+const authValue = text(authorization)
+
+alert(
+    "收到的输入：\n\n{@shared}",
+    "节点 1/9：分享输入或剪贴板"
+)
+
+alert(
+    "即将请求：\n\n{endpointValue}\n\nAuthorization 已载入（调试版不会显示密钥明文）。",
+    "节点 2/9：请求配置"
+)
+
+const response = jsonRequest(
+    "{endpointValue}",
+    "POST",
+    {
+        "input": "{@shared}",
+        "delivery": "auto",
+        "include_content": true
+    },
+    {
+        "Authorization": "{authValue}",
+        "Content-Type": "application/json"
+    }
+)
+
+const responseType = typeOf(response)
+alert(
+    "响应类型：{responseType}\n\n原始响应：\n{response}",
+    "节点 3/9：HTTP 原始响应"
+)
+
+const root = getDictionary(response)
+const dataRaw = getValue(root, "data")
+const dataType = typeOf(dataRaw)
+alert(
+    "data 类型：{dataType}\n\ndata 原始值：\n{dataRaw}",
+    "节点 4/9：读取 data"
+)
+
+if !dataRaw {
+    const errorRaw = getValue(root, "error")
+    alert(
+        "响应中没有 data。\n\nerror：{errorRaw}\n\n请截图这个弹窗。",
+        "调试中止：服务端响应错误"
+    )
+    stop()
+}
+
+const data = getDictionary(dataRaw)
+const caption = getValue(data, "caption")
+const images = getValue(data, "images")
+const videos = getValue(data, "videos")
+const serverImageCount = getValue(data, "image_count")
+const serverVideoCount = getValue(data, "video_count")
+const shortcutImageCount = count(images)
+const shortcutVideoCount = count(videos)
+
+alert(
+    "文案：\n{caption}\n\n服务端计数：图片 {serverImageCount}，视频 {serverVideoCount}\n快捷指令数组计数：图片 {shortcutImageCount}，视频 {shortcutVideoCount}",
+    "节点 5/9：分类结果"
+)
+
+alert(
+    "图片数组：\n{images}\n\n视频数组：\n{videos}",
+    "节点 6/9：媒体 URL 数组"
+)
+
+menu "调试：是否测试复制文案？" {
+    item "复制文案":
+        setClipboard(caption)
+        alert("已执行“设定剪贴板”。请粘贴检查。", "节点 7/9：文案复制完成")
+    item "跳过文案":
+        nothing()
+}
+
+@savedImages = 0
+for imageURL in images {
+    alert(
+        "准备下载第 {RepeatIndex} 张图片：\n\n{@imageURL}",
+        "节点 8/9：图片下载前"
+    )
+    const imageFile = downloadURL("{@imageURL}")
+    const imageType = typeOf(imageFile)
+    const imageName = getName(imageFile)
+    alert(
+        "下载完成。\n类型：{imageType}\n文件名：{imageName}\n\n下一步将快速预览。",
+        "节点 8/9：图片下载后"
+    )
+    quicklook(imageFile)
+    menu "这张图片能否正常预览？" {
+        item "正常，保存到图库":
+            savePhoto(imageFile)
+            @savedImages += 1
+            alert("图片已执行“保存到照片”。", "节点 8/9：图片写入图库")
+        item "异常，不保存":
+            nothing()
+    }
+}
+
+@savedVideos = 0
+for videoURL in videos {
+    alert(
+        "准备下载第 {RepeatIndex} 个视频：\n\n{@videoURL}",
+        "节点 9/9：视频下载前"
+    )
+    const videoFile = downloadURL("{@videoURL}")
+    const videoType = typeOf(videoFile)
+    const videoName = getName(videoFile)
+    alert(
+        "下载完成。\n类型：{videoType}\n文件名：{videoName}\n\n下一步将快速预览。",
+        "节点 9/9：视频下载后"
+    )
+    quicklook(videoFile)
+    menu "视频能否正常播放？" {
+        item "正常，保存到图库":
+            savePhoto(videoFile)
+            @savedVideos += 1
+            alert("视频已执行“保存到照片”。", "节点 9/9：视频写入图库")
+        item "异常，不保存":
+            nothing()
+    }
+}
+
+alert(
+    "调试结束。\n已保存图片 {@savedImages} 张，视频 {@savedVideos} 个。",
+    "ParseHub 调试完成"
+)
