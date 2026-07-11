@@ -4,6 +4,9 @@
 
 **社交媒体聚合解析器**
 
+[![CI](https://github.com/wuuduf/parsehub-api/actions/workflows/ci.yml/badge.svg)](https://github.com/wuuduf/parsehub-api/actions/workflows/ci.yml)
+[![Docker](https://github.com/wuuduf/parsehub-api/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/wuuduf/parsehub-api/actions/workflows/docker-publish.yml)
+
 [![PyPI version](https://img.shields.io/pypi/v/parsehub?color=blue&logo=pypi&logoColor=white)](https://pypi.org/project/parsehub/)
 [![Python](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -70,6 +73,59 @@ uv add "parsehub[cli]"
 ```
 
 ## 🚀 快速开始
+
+### HTTP API（首版）
+
+```bash
+uv sync --extra api
+export PARSEHUB_API_KEYS="replace-with-a-long-random-key"
+uv run parsehub-api
+```
+
+解析分享文案：
+
+```bash
+curl http://127.0.0.1:8000/api/v1/resolve \
+  -H 'Authorization: Bearer replace-with-a-long-random-key' \
+  -H 'Content-Type: application/json' \
+  -d '{"input":"复制的分享文案 https://example.com/post/1"}'
+```
+
+OpenAPI 文档默认位于 `http://127.0.0.1:8000/docs`。复制 `.env.example` 为 `.env` 后，也可以运行 `docker compose up -d --build`。
+
+API 已支持：
+
+- `delivery=direct|proxy|auto`：媒体直链或短期签名代理链接。
+- `GET|HEAD /api/v1/media/{token}`：支持 Range 的媒体流。
+- `POST /api/v1/jobs`：异步下载并将多媒体打包为 ZIP。
+- `GET/DELETE /api/v1/jobs/{id}`：查询或取消任务。
+- `GET /api/v1/jobs/{id}/download`：获取任务产物。
+- `GET /metrics`：Prometheus 文本指标。
+- 可选 Redis 分布式缓存、限流、额度和媒体 Token。
+- `/admin` 网页管理台：加密管理各平台 Cookie/代理，生成、停用和删除用户 API Key。
+- `/` 用户解析页面：内容预览、媒体多选、视频清晰度切换、单项及打包下载。
+
+详细设计见 [`docs/API_ARCHITECTURE.md`](docs/API_ARCHITECTURE.md)。
+快捷指令接入见 [`docs/IOS_SHORTCUT.md`](docs/IOS_SHORTCUT.md)。
+各平台 Cookie 获取与配置见 [`docs/COOKIE_GUIDE.md`](docs/COOKIE_GUIDE.md)。
+用户解析页面见 [`docs/USER_PAGE.md`](docs/USER_PAGE.md)。
+VPS Docker 从零部署见 [`docs/VPS_DEPLOY.md`](docs/VPS_DEPLOY.md)。
+
+### 多架构 Docker 镜像
+
+```bash
+docker pull ghcr.io/wuuduf/parsehub-api:latest
+docker image inspect ghcr.io/wuuduf/parsehub-api:latest --format '{{.Os}}/{{.Architecture}}'
+```
+
+同一标签同时发布 `linux/amd64` 和 `linux/arm64`，Docker 会自动选择当前 VPS 架构。首次部署可直接执行：
+
+```bash
+git clone https://github.com/wuuduf/parsehub-api.git
+cd parsehub-api
+chmod +x scripts/*.sh
+./scripts/bootstrap-vps.sh
+```
 
 ### CLI
 

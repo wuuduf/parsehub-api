@@ -1,0 +1,45 @@
+services:
+  parsehub-api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PARSEHUB_REDIS_URL: redis://redis:6379/0
+      PARSEHUB_ADMIN_DB_PATH: /data/parsehub-admin.db
+    ports:
+      - "8000:8000"
+    init: true
+    depends_on:
+      redis:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    volumes:
+      - admin-data:/data
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    read_only: true
+    tmpfs:
+      - /data:size=256m,mode=0700
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  admin-data:

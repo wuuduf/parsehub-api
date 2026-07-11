@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install dependencies
+        run: uv sync --extra api --group dev --locked
+      - name: Ruff
+        run: uv run ruff check .
+      - name: Mypy
+        run: uv run mypy .
+      - name: Tests
+        run: uv run pytest -q
+      - name: Build Python artifacts
+        run: uv build
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate production Compose
+        run: |
+          cp .env.example .env
+          docker compose -f compose.prod.yaml config --quiet

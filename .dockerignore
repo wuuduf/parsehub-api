@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+.bootstrap-venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.playwright-cli
+dist
+data
+downloads
+__pycache__
+*.pyc
+*.pyo
+.env
+.idea
+.DS_Store
