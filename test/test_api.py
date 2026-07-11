@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import io
 import tempfile
@@ -12,7 +13,10 @@ from types import SimpleNamespace
 from fastapi.testclient import TestClient
 
 from parsehub.errors import ParseError, UnknownPlatform
+from parsehub.parsers.parser.bilibili import BiliYtParse
+from parsehub.provider_api.bilibili import BiliAPI
 from parsehub.types import ImageRef, MultimediaParseResult, Platform, VideoRef
+from parsehub.utils.helpers import SecretCookie
 from parsehub_api.main import create_app
 from parsehub_api.media import MediaTarget
 from parsehub_api.settings import Settings
@@ -118,6 +122,19 @@ def make_client(*, media_url="https://cdn.example/image.jpg", **overrides):
 
 
 class APITest(unittest.TestCase):
+    def test_bilibili_cookie_reaches_api_and_ytdlp_fallback(self):
+        cookie = {"SESSDATA": "session-value", "bili_jct": "csrf-value"}
+        api = BiliAPI(cookie=cookie)
+        client = api._get_client()
+
+        self.assertEqual(client.cookies.get("SESSDATA"), "session-value")
+        asyncio.run(client.aclose())
+        parser = BiliYtParse(cookie=SecretCookie(cookie))
+        cookie_file = parser.get_cookie_text()
+        self.assertIsNotNone(cookie_file)
+        assert cookie_file is not None
+        self.assertIn(".bilibili.com\tTRUE\t/\tFALSE\t0\tSESSDATA\tsession-value", cookie_file)
+
     def test_public_resolver_page_is_available(self):
         client, _ = make_client()
         response = client.get("/")
@@ -330,8 +347,6 @@ class APITest(unittest.TestCase):
     def test_media_gateway_supports_head_and_range(self):
         with media_server(b"0123456789") as url:
             client, _ = make_client(allow_private_media=True)
-            import asyncio
-
             signed, _ = asyncio.run(
                 client.app.state.media_tokens.issue(MediaTarget(url=url, filename="demo.bin", headers={}))
             )

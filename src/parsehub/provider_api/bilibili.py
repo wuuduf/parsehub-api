@@ -29,9 +29,10 @@ CODE_LEN = len(ENCODE_MAP)
 
 
 class BiliAPI:
-    def __init__(self, proxy: str | None = None):
+    def __init__(self, proxy: str | None = None, cookie: dict[str, str] | None = None):
         self.headers = {"User-Agent": USER_AGENT}
         self.proxy = proxy
+        self.cookie = cookie or {}
         self._client: httpx.AsyncClient | None = None
 
     async def __aenter__(self):
@@ -112,7 +113,7 @@ class BiliAPI:
             "bili_jct": "",
             "ac_time_value": "",
             "opus-goback": "1",
-        }
+        } | self.cookie
         response = await self._get_client().get(
             "https://api.bilibili.com/x/player/playurl",
             params=params,
@@ -152,7 +153,7 @@ class BiliAPI:
 
     def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or getattr(self._client, "is_closed", False):
-            self._client = httpx.AsyncClient(proxy=self.proxy, headers=self.headers)
+            self._client = httpx.AsyncClient(proxy=self.proxy, headers=self.headers, cookies=self.cookie)
         return self._client
 
     async def aclose(self):

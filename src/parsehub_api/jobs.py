@@ -146,7 +146,7 @@ class JobManager:
                 for index, target in enumerate(job.targets, 1):
                     await validate_public_url(target.url, allow_private=self.allow_private)
                     filename = target.filename or _filename(target.url, index)
-                    await self._download(target.url, files_dir / filename, job, target.headers)
+                    await self._download(target.url, files_dir / filename, job, target.headers, target.proxy)
                     job.completed_files = index
                     job.updated_at = time.time()
                 output = job_dir / "media.zip"
@@ -169,8 +169,10 @@ class JobManager:
             job.updated_at = time.time()
             await self._remove_output(job)
 
-    async def _download(self, url: str, path: Path, job: DownloadJob, headers: dict[str, str]) -> None:
-        async with httpx.AsyncClient(timeout=60, follow_redirects=False) as client:
+    async def _download(
+        self, url: str, path: Path, job: DownloadJob, headers: dict[str, str], proxy: str | None
+    ) -> None:
+        async with httpx.AsyncClient(timeout=60, follow_redirects=False, proxy=proxy) as client:
             current_url = url
             for _ in range(6):
                 await validate_public_url(current_url, allow_private=self.allow_private)

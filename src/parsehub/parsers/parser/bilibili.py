@@ -50,12 +50,14 @@ class BiliParse(BaseParser):
         else:
             try:
                 return await self.bili_api_parse(raw_url)
-            except Exception as e:
-                logger.opt(exception=e).warning("Bilibili API 解析失败, 尝试 yt-dlp 解析")
+            except Exception as api_error:
+                logger.opt(exception=api_error).warning("Bilibili API 解析失败, 尝试 yt-dlp 解析")
                 try:
                     return await self.ytp_parse(raw_url)
-                except Exception as e:
-                    raise ParseError("Bilibili 解析失败") from e
+                except Exception as ytdlp_error:
+                    raise ParseError(
+                        f"Bilibili API 失败: {api_error}; yt-dlp 回退失败: {ytdlp_error}"
+                    ) from ytdlp_error
 
     @staticmethod
     def _is_bvid(url: str) -> bool:
@@ -96,7 +98,7 @@ class BiliParse(BaseParser):
         return cast(BiliDynamic, dynamic_info)
 
     async def bili_api_parse(self, url: str) -> BiliVideoParseResult | ImageParseResult:
-        async with BiliAPI(proxy=self.proxy) as bili:
+        async with BiliAPI(proxy=self.proxy, cookie=self.cookie.get_value()) as bili:
             video_info = await bili.get_video_info(url)
 
             if not (data := video_info.get("data")):
@@ -160,6 +162,15 @@ class BiliYtParse(YtParser, register=False):
     @property
     def _video_parse_result_type(self) -> type[BiliYtVideoParseResult]:
         return BiliYtVideoParseResult
+
+    def get_cookie_text(self) -> str | None:
+        cookie = self.cookie.get_value()
+        if not cookie:
+            return None
+        lines = ["# Netscape HTTP Cookie File"]
+        for name, value in cookie.items():
+            lines.append(f".bilibili.com\tTRUE\t/\tFALSE\t0\t{name}\t{value}")
+        return "\n".join(lines) + "\n"
 
 
 class BiliYtVideoParseResult(YtVideoParseResult):

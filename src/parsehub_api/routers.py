@@ -86,6 +86,7 @@ async def create_job(payload: JobCreateRequest, request: Request) -> dict:
             url=item["url"],
             filename=f'{item["id"]}.{item.get("extension") or "bin"}',
             headers=item.get("_headers", {}),
+            proxy=item.get("_proxy"),
         )
         for item in data["media"]
     ]
@@ -127,7 +128,12 @@ async def _proxy_media(request: Request, data: dict) -> dict:
     for item in data["media"]:
         filename = f'{item["id"]}.{item["extension"] or "bin"}'
         token, expires = await request.app.state.media_tokens.issue(
-            MediaTarget(url=item["url"], filename=filename, headers=item.get("_headers", {}))
+            MediaTarget(
+                url=item["url"],
+                filename=filename,
+                headers=item.get("_headers", {}),
+                proxy=item.get("_proxy"),
+            )
         )
         item = {
             **item,
@@ -141,6 +147,7 @@ async def _proxy_media(request: Request, data: dict) -> dict:
                     url=quality["url"],
                     filename=f'{item["id"]}_{quality["id"]}.{quality.get("extension") or "mp4"}',
                     headers=quality.get("_headers", item.get("_headers", {})),
+                    proxy=item.get("_proxy"),
                 )
             )
             proxied_qualities.append(
@@ -157,6 +164,7 @@ async def _proxy_media(request: Request, data: dict) -> dict:
                     url=item["paired_video_url"],
                     filename=f'{item["id"]}_live.mp4',
                     headers=item.get("_headers", {}),
+                    proxy=item.get("_proxy"),
                 )
             )
             item["paired_video_url"] = str(request.url_for("media", token=paired_token))

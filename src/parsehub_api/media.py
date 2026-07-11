@@ -25,6 +25,7 @@ class MediaTarget:
     url: str
     filename: str
     headers: dict[str, str]
+    proxy: str | None = None
 
 
 class MediaTokenStore:
@@ -90,7 +91,7 @@ class MediaGateway:
         for name in ("range", "if-range", "if-none-match", "if-modified-since"):
             if value := request.headers.get(name):
                 headers[name] = value
-        client = httpx.AsyncClient(timeout=self.timeout, follow_redirects=False)
+        client = httpx.AsyncClient(timeout=self.timeout, follow_redirects=False, proxy=target.proxy)
         try:
             current_url = target.url
             for _ in range(6):

@@ -92,6 +92,8 @@ class ResolverService:
             raise APIError(502, "UPSTREAM_PARSE_FAILED", message, retryable=True) from exc
 
         normalized = self._normalize(result)
+        for media in normalized["media"]:
+            media["_proxy"] = credential.proxy
         await self.circuit.success(platform_id)
         await self.metrics.increment("resolve_total", platform=platform_id, result="success")
         await self.cache.set(key, normalized)
