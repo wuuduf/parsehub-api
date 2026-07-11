@@ -54,6 +54,7 @@ async def resolve(payload: ResolveRequest, request: Request) -> dict:
         data = await _proxy_media(request, data)
     else:
         data = _public_media(data)
+    data = {**data, **_shortcut_payload(data)}
     data = {**data, "cache": {"hit": cache_hit, "ttl": request.app.state.settings.cache_ttl}}
     return _success(request, data)
 
@@ -65,25 +66,7 @@ async def shortcut_resolve(payload: ResolveRequest, request: Request) -> dict:
         raise APIError(422, "INVALID_INPUT", "输入内容过长")
     data, _ = await request.app.state.resolver.resolve(payload.input, include_content=True)
     data = await _proxy_media(request, data)
-    images: list[str] = []
-    videos: list[str] = []
-    for item in data["media"]:
-        if item["kind"] in {"image", "animation", "live_photo"}:
-            images.append(item["url"])
-        if item["kind"] == "video":
-            videos.append(item["url"])
-        if item["kind"] == "live_photo" and item.get("paired_video_url"):
-            videos.append(item["paired_video_url"])
-    return _success(
-        request,
-        {
-            "caption": data["post"]["content"] or data["post"]["title"],
-            "images": images,
-            "videos": videos,
-            "image_count": len(images),
-            "video_count": len(videos),
-        },
-    )
+    return _success(request, _shortcut_payload(data))
 
 
 @router.api_route("/api/v1/media/{token}", methods=["GET", "HEAD"], tags=["media"])
@@ -194,4 +177,23 @@ def _public_media(data: dict) -> dict:
             }
             for item in data["media"]
         ],
+    }
+
+
+def _shortcut_payload(data: dict) -> dict:
+    images: list[str] = []
+    videos: list[str] = []
+    for item in data["media"]:
+        if item["kind"] in {"image", "animation", "live_photo"}:
+            images.append(item["url"])
+        if item["kind"] == "video":
+            videos.append(item["url"])
+        if item["kind"] == "live_photo" and item.get("paired_video_url"):
+            videos.append(item["paired_video_url"])
+    return {
+        "caption": data["post"]["content"] or data["post"]["title"],
+        "images": images,
+        "videos": videos,
+        "image_count": len(images),
+        "video_count": len(videos),
     }

@@ -32,6 +32,16 @@ const response = jsonRequest(
 
 const root = getDictionary(response)
 const dataRaw = getValue(root, "data")
+if !dataRaw {
+    const errorRaw = getValue(root, "error")
+    const error = getDictionary(errorRaw)
+    const errorMessage = getValue(error, "message")
+    alert(
+        "{errorMessage}\n\n请确认服务端已更新、接口地址正确、API Key 有效。",
+        "ParseHub 解析失败"
+    )
+    stop()
+}
 const data = getDictionary(dataRaw)
 const caption = getValue(data, "caption")
 const images = getValue(data, "images")
